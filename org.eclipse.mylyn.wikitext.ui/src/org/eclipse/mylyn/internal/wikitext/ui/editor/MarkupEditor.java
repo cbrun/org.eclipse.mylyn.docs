@@ -220,6 +220,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 		sourceViewerConfiguration = new MarkupSourceViewerConfiguration(getPreferenceStore());
 		sourceViewerConfiguration.setOutline(outlineModel);
 		sourceViewerConfiguration.setShowInTarget(this);
+		sourceViewerConfiguration.setPastePreprocessor(new ImagePastePreprocessor());
 		setSourceViewerConfiguration(sourceViewerConfiguration);
 	}
 
