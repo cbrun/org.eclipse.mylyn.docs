@@ -20,9 +20,12 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.mylyn.wikitext.core.parser.DocumentBuilder;
 import org.eclipse.mylyn.wikitext.core.parser.ImageAttributes;
+import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.core.parser.markup.MarkupLanguage;
+import org.eclipse.mylyn.wikitext.html.core.HtmlLanguage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.HTMLTransfer;
 import org.eclipse.swt.dnd.ImageTransfer;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
@@ -87,6 +90,18 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 				 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
 				 */
 			}
+		}
+
+		String htmlText = (String) clipboard.getContents(HTMLTransfer.getInstance());
+		if (htmlText != null) {
+			StringWriter out = new StringWriter();
+			HtmlLanguage language = new HtmlLanguage();
+			language.setParseCleansHtml(true);
+			MarkupParser markupParser = new MarkupParser(language, new NoStyleDocumentBuilder(
+					markup.createDocumentBuilder(out)));
+			markupParser.parse(htmlText, false);
+			clipboard.setContents(new Object[] { htmlText, out.toString() },
+					new Transfer[] { HTMLTransfer.getInstance(), TextTransfer.getInstance() });
 		}
 	}
 
