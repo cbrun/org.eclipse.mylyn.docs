@@ -14,10 +14,19 @@ package org.eclipse.mylyn.internal.wikitext.ui.editor;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.jface.text.TextSelection;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.mylyn.internal.wikitext.ui.WikiTextUiPlugin;
 import org.eclipse.mylyn.wikitext.core.parser.DocumentBuilder;
 import org.eclipse.mylyn.wikitext.core.parser.ImageAttributes;
 import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
@@ -31,8 +40,8 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.widgets.Display;
 
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -40,9 +49,19 @@ import com.google.common.io.Files;
 
 public class ImagePastePreprocessor implements PastePreprocessor {
 
+	private static final String PNG_EXTENSION = ".png"; //$NON-NLS-1$
+
+	private static final Pattern ILLEGAL_CHARACTERE = Pattern.compile("[^\\w_\\-\\.]"); //$NON-NLS-1$
+
 	private IFile file;
 
 	private MarkupLanguage markup;
+
+	private final ISelectionProvider selectionProvider;
+
+	public ImagePastePreprocessor(ISelectionProvider selectionProvider) {
+		this.selectionProvider = selectionProvider;
+	}
 
 	@Override
 	public void prepareClipboard(Clipboard clipboard) {
@@ -51,17 +70,22 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 		if (imageData != null && imageData.data != null && imageData.data.length > 0 && file != null && markup != null) {
 			ImageLoader imageLoader = new ImageLoader();
 			imageLoader.data = new ImageData[] { imageData };
-			String IMG_FOLDER_NAME = "pasted-images";
 			HashFunction hf = Hashing.md5();
 			HashCode code = hf.hashBytes(imageData.data);
 
-			String imageFileName = code.toString() + ".png"; //$NON-NLS-1$
-			File imageFile = new File(file.getParent()
-					.getLocation()
-					.append(IMG_FOLDER_NAME)
-					.append(imageFileName)
-					.toOSString());
+			String defaultLabelFromTextText = getDefaultLabelFromTextText();
+			IFile newImageFile = getNewImageFile(defaultLabelFromTextText != null
+					? defaultLabelFromTextText
+					: code.toString());
 
+			if (newImageFile == null) {
+				//If canceled prevent past
+				clipboard.clearContents();
+				return;
+			}
+			File imageFile = new File(newImageFile.getLocation().toOSString());
+			//Save previous choice from next time
+			storeSettings(newImageFile);
 			try {
 				Files.createParentDirs(imageFile);
 				imageLoader.save(imageFile.getAbsolutePath(), SWT.IMAGE_PNG);
@@ -70,7 +94,7 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 				ImageAttributes imgAttr = new ImageAttributes();
 				imgAttr.setWidth(imageData.width);
 				imgAttr.setHeight(imageData.height);
-				builder.image(imgAttr, IMG_FOLDER_NAME + StandardSystemProperty.FILE_SEPARATOR.value() + imageFileName);
+				builder.image(imgAttr, createRelativePath(newImageFile));
 				TextTransfer textTransfer = TextTransfer.getInstance();
 				clipboard.setContents(new Object[] { imageData, out.toString() },
 						new Transfer[] { ImageTransfer.getInstance(), textTransfer });
@@ -105,6 +129,40 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 		}
 	}
 
+	private void storeSettings(IFile newImageFile) {
+		IDialogSettings settings = getDialogSettings();
+		settings.put(file.getFullPath().toPortableString(), newImageFile.getParent().getFullPath().toPortableString());
+	}
+
+	private IDialogSettings getDialogSettings() {
+		IDialogSettings dialogSettings = WikiTextUiPlugin.getDefault().getDialogSettings();
+		IDialogSettings settings = dialogSettings.getSection(WorkspaceResourceDialog.class.getName());
+		if (settings == null) {
+			settings = dialogSettings.addNewSection(WorkspaceResourceDialog.class.getName());
+		}
+		return settings;
+	}
+
+	private String getPrevisouChoice() {
+		return getDialogSettings().get(file.getFullPath().toPortableString());
+	}
+
+	private IFile getNewImageFile(String defaultName) {
+		String defaultPath = getPrevisouChoice();
+		if (!defaultName.endsWith(PNG_EXTENSION)) {
+			defaultName = defaultName + PNG_EXTENSION;
+		}
+
+		IPath suggestedPath = defaultPath != null ? new Path(defaultPath) : file.getParent().getFullPath();
+		IFile newImageFile = WorkspaceResourceDialog.openNewFile(Display.getCurrent().getActiveShell(), "Image folder",
+				"Select the image folder", suggestedPath, defaultName, file.getProject());
+		return newImageFile;
+	}
+
+	private String createRelativePath(IFile newImageFile) {
+		return newImageFile.getFullPath().makeRelativeTo(file.getParent().getFullPath()).toPortableString();
+	}
+
 	@Override
 	public void setFile(IFile file) {
 		this.file = file;
@@ -114,7 +172,28 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 	@Override
 	public void setMarkupLanguage(MarkupLanguage markupLanguage) {
 		this.markup = markupLanguage;
+	}
 
+	private String getDefaultLabelFromTextText() {
+		if (selectionProvider != null) {
+			ISelection selection = selectionProvider.getSelection();
+			if (selection instanceof TextSelection) {
+				TextSelection textSelection = (TextSelection) selection;
+				String text = textSelection.getText();
+				return correctFileName(text);
+			}
+		}
+		return null;
+	}
+
+	public static String correctFileName(final String init) {
+		if (init == null) {
+			return null;
+		}
+		//Remove illegal character in name
+		Matcher matcher = ILLEGAL_CHARACTERE.matcher(init);
+		String correctLabel = matcher.replaceAll("_"); //$NON-NLS-1$
+		return correctLabel.length() > 0 ? correctLabel : null;
 	}
 
 }
