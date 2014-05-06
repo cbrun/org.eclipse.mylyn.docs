@@ -27,7 +27,7 @@ import org.eclipse.mylyn.wikitext.textile.core.TextileLanguage;
 
 /**
  * a document builder that emits Textile markup
- * 
+ *
  * @see HtmlParser
  * @author David Green
  * @since 1.6
@@ -343,7 +343,7 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 
 			return new ParagraphBlock(type, attributesMarkup.length() > 0 || previousWasExtended
 					? "p" + attributesMarkup + ". " //$NON-NLS-1$ //$NON-NLS-2$
-					: attributesMarkup, "\n\n", false, false, true); //$NON-NLS-1$
+							: attributesMarkup, "\n\n", false, false, true); //$NON-NLS-1$
 		case PREFORMATTED:
 			return new ContentBlock(type, "pre" + computeAttributes(attributes) + ". ", "\n\n", false, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		case QUOTE:
@@ -402,7 +402,7 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 			block = new ContentBlock("__" + spanAttributes, "__", true, false); //$NON-NLS-1$//$NON-NLS-2$
 			break;
 		case LINK:
-			if (attributes instanceof LinkAttributes) {
+			if (attributes instanceof LinkAttributes && ((LinkAttributes) attributes).getHref() != null) {
 				block = new LinkBlock((LinkAttributes) attributes);
 			} else {
 				block = new SpanBlock(spanAttributes, true, false);
@@ -421,12 +421,12 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 			block = new ContentBlock("~" + spanAttributes, "~", true, false); //$NON-NLS-1$//$NON-NLS-2$
 			break;
 
-//			case QUOTE: not supported by Textile		
+//			case QUOTE: not supported by Textile
 		case UNDERLINED:
 		case SPAN:
 		default:
 			if (spanAttributes.length() == 0) {
-				block = new SpanBlock("", false, false); //$NON-NLS-1$ 
+				block = new SpanBlock("", false, false); //$NON-NLS-1$
 			} else {
 				block = new SpanBlock(spanAttributes, true, false);
 			}
