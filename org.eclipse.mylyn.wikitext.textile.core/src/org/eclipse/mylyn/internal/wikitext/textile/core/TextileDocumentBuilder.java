@@ -434,7 +434,7 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 		case SPAN:
 		default:
 			if (spanAttributes.length() == 0) {
-				block = new SpanBlock("", false, false); //$NON-NLS-1$
+				block = new SpanBlock("", true, false); //$NON-NLS-1$
 			} else {
 				block = new SpanBlock(spanAttributes, true, false);
 			}
