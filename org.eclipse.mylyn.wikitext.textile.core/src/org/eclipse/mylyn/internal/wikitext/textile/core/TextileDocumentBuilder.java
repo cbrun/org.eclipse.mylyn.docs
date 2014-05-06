@@ -347,7 +347,11 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 
 			return new ParagraphBlock(type, attributesMarkup.length() > 0 || previousWasExtended
 					? "p" + attributesMarkup + ". " //$NON-NLS-1$ //$NON-NLS-2$
+<<<<<<< HEAD
 					: attributesMarkup, false, false, true, 2, 2);
+=======
+							: attributesMarkup, "\n\n", false, false, true); //$NON-NLS-1$
+>>>>>>> Fix potential NPE if a Link Span has no href
 		case PREFORMATTED:
 			return new ContentBlock(type, "pre" + computeAttributes(attributes) + ". ", "", false, false, false, 2, 2); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		case QUOTE:
@@ -404,9 +408,9 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 			break;
 		case ITALIC:
 			block = new ContentBlock("__" + spanAttributes, "__", true, false, 0, 0); //$NON-NLS-1$//$NON-NLS-2$
-			break;
+            break;
 		case LINK:
-			if (attributes instanceof LinkAttributes) {
+			if (attributes instanceof LinkAttributes && ((LinkAttributes) attributes).getHref() != null) {
 				block = new LinkBlock((LinkAttributes) attributes);
 			} else {
 				block = new SpanBlock(spanAttributes, true, false);
@@ -430,7 +434,7 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 		case SPAN:
 		default:
 			if (spanAttributes.length() == 0) {
-				block = new SpanBlock("", true, false); //$NON-NLS-1$
+				block = new SpanBlock("", false, false); //$NON-NLS-1$
 			} else {
 				block = new SpanBlock(spanAttributes, true, false);
 			}
