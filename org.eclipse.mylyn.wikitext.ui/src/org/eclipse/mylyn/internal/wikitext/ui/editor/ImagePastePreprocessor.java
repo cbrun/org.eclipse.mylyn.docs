@@ -76,7 +76,7 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 			String defaultLabelFromTextText = getDefaultLabelFromTextText();
 			IFile newImageFile = getNewImageFile(defaultLabelFromTextText != null
 					? defaultLabelFromTextText
-					: code.toString());
+							: code.toString());
 
 			if (newImageFile == null) {
 				//If canceled prevent past
@@ -90,42 +90,55 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 				Files.createParentDirs(imageFile);
 				imageLoader.save(imageFile.getAbsolutePath(), SWT.IMAGE_PNG);
 				StringWriter out = new StringWriter();
-				DocumentBuilder builder = markup.createDocumentBuilder(out);
-				ImageAttributes imgAttr = new ImageAttributes();
-				imgAttr.setWidth(imageData.width);
-				imgAttr.setHeight(imageData.height);
-				builder.image(imgAttr, createRelativePath(newImageFile));
+				try {
+					DocumentBuilder builder = markup.createDocumentBuilder(out);
+					ImageAttributes imgAttr = new ImageAttributes();
+					imgAttr.setWidth(imageData.width);
+					imgAttr.setHeight(imageData.height);
+					builder.image(imgAttr, createRelativePath(newImageFile));
+				} catch (UnsupportedOperationException e) {
+					/*
+					 * the current markup langage does not support the document builder interface, let's paste the uri with an arbitrary syntax (markdown here) anyway so that the user doesn't have to figure out the uri.
+					 */
+					out.append("![ Image Caption ](" + createRelativePath(newImageFile) + ")");
+
+				}
+
 				TextTransfer textTransfer = TextTransfer.getInstance();
 				clipboard.setContents(new Object[] { imageData, out.toString() },
 						new Transfer[] { ImageTransfer.getInstance(), textTransfer });
 			} catch (IOException e) {
-				/*
-				 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
-				 */
-			} catch (UnsupportedOperationException e) {
-				/*
-				 * the current markup langage does not support the document builder interface.
-				 */
+				WikiTextUiPlugin.getDefault().log(e);
 			}
+			/*
+			 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
+			 */
 			try {
 				file.getParent().refreshLocal(2, new NullProgressMonitor());
-			} catch (CoreException e) {
+			} catch (CoreException core) {
 				/*
 				 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
 				 */
+				WikiTextUiPlugin.getDefault().log(core);
 			}
 		}
 
 		String htmlText = (String) clipboard.getContents(HTMLTransfer.getInstance());
 		if (htmlText != null) {
 			StringWriter out = new StringWriter();
-			HtmlLanguage language = new HtmlLanguage();
-			language.setParseCleansHtml(true);
-			MarkupParser markupParser = new MarkupParser(language, new NoStyleDocumentBuilder(
-					markup.createDocumentBuilder(out)));
-			markupParser.parse(htmlText, false);
-			clipboard.setContents(new Object[] { htmlText, out.toString() },
-					new Transfer[] { HTMLTransfer.getInstance(), TextTransfer.getInstance() });
+			try {
+				HtmlLanguage language = new HtmlLanguage();
+				language.setParseCleansHtml(true);
+				MarkupParser markupParser = new MarkupParser(language, new NoStyleDocumentBuilder(
+						markup.createDocumentBuilder(out)));
+				markupParser.parse(htmlText, false);
+				clipboard.setContents(new Object[] { htmlText, out.toString() },
+						new Transfer[] { HTMLTransfer.getInstance(), TextTransfer.getInstance() });
+			} catch (UnsupportedOperationException e) {
+				/**
+				 * The current markup does not support serializing from the model, let's paste the uri anyway.
+				 */
+			}
 		}
 	}
 
