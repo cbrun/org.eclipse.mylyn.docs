@@ -347,11 +347,7 @@ public class TextileDocumentBuilder extends AbstractMarkupDocumentBuilder {
 
 			return new ParagraphBlock(type, attributesMarkup.length() > 0 || previousWasExtended
 					? "p" + attributesMarkup + ". " //$NON-NLS-1$ //$NON-NLS-2$
-<<<<<<< HEAD
 					: attributesMarkup, false, false, true, 2, 2);
-=======
-							: attributesMarkup, "\n\n", false, false, true); //$NON-NLS-1$
->>>>>>> Fix potential NPE if a Link Span has no href
 		case PREFORMATTED:
 			return new ContentBlock(type, "pre" + computeAttributes(attributes) + ". ", "", false, false, false, 2, 2); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		case QUOTE:

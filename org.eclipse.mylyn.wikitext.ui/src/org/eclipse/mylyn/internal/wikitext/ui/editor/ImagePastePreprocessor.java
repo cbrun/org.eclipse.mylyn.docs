@@ -67,16 +67,16 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 	public void prepareClipboard(Clipboard clipboard) {
 		ImageData imageData = (ImageData) clipboard.getContents(ImageTransfer.getInstance());
 
-		if (imageData != null && imageData.data != null && imageData.data.length > 0 && file != null && markup != null) {
+		if (imageData != null && imageData.data != null && imageData.data.length > 0 && file != null
+				&& markup != null) {
 			ImageLoader imageLoader = new ImageLoader();
 			imageLoader.data = new ImageData[] { imageData };
 			HashFunction hf = Hashing.md5();
 			HashCode code = hf.hashBytes(imageData.data);
 
 			String defaultLabelFromTextText = getDefaultLabelFromTextText();
-			IFile newImageFile = getNewImageFile(defaultLabelFromTextText != null
-					? defaultLabelFromTextText
-							: code.toString());
+			IFile newImageFile = getNewImageFile(
+					defaultLabelFromTextText != null ? defaultLabelFromTextText : code.toString());
 
 			if (newImageFile == null) {
 				//If canceled prevent past
@@ -96,28 +96,32 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 					imgAttr.setWidth(imageData.width);
 					imgAttr.setHeight(imageData.height);
 					builder.image(imgAttr, createRelativePath(newImageFile));
+					builder.flush();
 				} catch (UnsupportedOperationException e) {
 					/*
-					 * the current markup langage does not support the document builder interface, let's paste the uri with an arbitrary syntax (markdown here) anyway so that the user doesn't have to figure out the uri.
+					 * the current markup langage does not support the document builder interface, let's at least paste the image uri.
 					 */
-					out.append("![ Image Caption ](" + createRelativePath(newImageFile) + ")");
-
+					out.append(createRelativePath(newImageFile));
 				}
 
 				TextTransfer textTransfer = TextTransfer.getInstance();
-				clipboard.setContents(new Object[] { imageData, out.toString() },
+				String toPaste = out.toString();
+				if (toPaste.length() == 0) {
+					toPaste = createRelativePath(newImageFile);
+				}
+				clipboard.setContents(new Object[] { imageData, toPaste },
 						new Transfer[] { ImageTransfer.getInstance(), textTransfer });
 			} catch (IOException e) {
 				WikiTextUiPlugin.getDefault().log(e);
 			}
 			/*
-			 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
+			 * Auto-adapting copy-paste is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
 			 */
 			try {
 				file.getParent().refreshLocal(2, new NullProgressMonitor());
 			} catch (CoreException core) {
 				/*
-				 * This is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
+				 * Auto-adapting copy-paste is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
 				 */
 				WikiTextUiPlugin.getDefault().log(core);
 			}
@@ -129,8 +133,8 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 			try {
 				HtmlLanguage language = new HtmlLanguage();
 				language.setParseCleansHtml(true);
-				MarkupParser markupParser = new MarkupParser(language, new NoStyleDocumentBuilder(
-						markup.createDocumentBuilder(out)));
+				MarkupParser markupParser = new MarkupParser(language,
+						new NoStyleDocumentBuilder(markup.createDocumentBuilder(out)));
 				markupParser.parse(htmlText, false);
 				clipboard.setContents(new Object[] { htmlText, out.toString() },
 						new Transfer[] { HTMLTransfer.getInstance(), TextTransfer.getInstance() });
