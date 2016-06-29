@@ -171,8 +171,9 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 		}
 
 		IPath suggestedPath = defaultPath != null ? new Path(defaultPath) : file.getParent().getFullPath();
-		IFile newImageFile = WorkspaceResourceDialog.openNewFile(Display.getCurrent().getActiveShell(), "Image folder",
-				"Select the image folder", suggestedPath, defaultName, file.getProject());
+		IFile newImageFile = WorkspaceResourceDialog.openNewFile(Display.getCurrent().getActiveShell(),
+				Messages.MarkupEditor_imagesFolder, Messages.MarkupEditor_imagesFolder_select, suggestedPath,
+				defaultName, file.getProject());
 		return newImageFile;
 	}
 
