@@ -47,7 +47,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 
-public class ImagePastePreprocessor implements PastePreprocessor {
+public class MarkupPastePreprocessor implements PastePreprocessor {
 
 	private static final String PNG_EXTENSION = ".png"; //$NON-NLS-1$
 
@@ -59,7 +59,7 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 
 	private final ISelectionProvider selectionProvider;
 
-	public ImagePastePreprocessor(ISelectionProvider selectionProvider) {
+	public MarkupPastePreprocessor(ISelectionProvider selectionProvider) {
 		this.selectionProvider = selectionProvider;
 	}
 
@@ -204,7 +204,7 @@ public class ImagePastePreprocessor implements PastePreprocessor {
 		return null;
 	}
 
-	public static String correctFileName(final String init) {
+	private static String correctFileName(final String init) {
 		if (init == null) {
 			return null;
 		}
