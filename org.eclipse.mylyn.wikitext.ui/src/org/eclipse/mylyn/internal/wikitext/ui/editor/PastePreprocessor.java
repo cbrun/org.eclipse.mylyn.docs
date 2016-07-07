@@ -32,13 +32,14 @@ public interface PastePreprocessor {
 		}
 
 		@Override
-		public void prepareClipboard(Clipboard clipboard) {
+		public Runnable prepareClipboard(Clipboard clipboard) {
 			// ignore
+			return null;
 
 		}
 	};
 
-	void prepareClipboard(Clipboard clipboard);
+	Runnable prepareClipboard(Clipboard clipboard);
 
 	void setFile(IFile file);
 

@@ -64,9 +64,29 @@ public class MarkupPastePreprocessor implements PastePreprocessor {
 	}
 
 	@Override
-	public void prepareClipboard(Clipboard clipboard) {
+	public Runnable prepareClipboard(Clipboard clipboard) {
 		ImageData imageData = (ImageData) clipboard.getContents(ImageTransfer.getInstance());
 
+		final Object oldTextClipboard = clipboard.getContents(TextTransfer.getInstance());
+		final Object oldHtmlClipboard = clipboard.getContents(HTMLTransfer.getInstance());
+		Runnable resetClipboardState = new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+
+					if (oldHtmlClipboard == null) {
+						clipboard.setContents(new Object[] { oldTextClipboard },
+								new Transfer[] { TextTransfer.getInstance() });
+					} else {
+						clipboard.setContents(new Object[] { oldTextClipboard, oldHtmlClipboard },
+								new Transfer[] { TextTransfer.getInstance(), HTMLTransfer.getInstance() });
+					}
+				} finally {
+					clipboard.dispose();
+				}
+			}
+		};
 		if (imageData != null && imageData.data != null && imageData.data.length > 0 && file != null
 				&& markup != null) {
 			ImageLoader imageLoader = new ImageLoader();
@@ -79,9 +99,11 @@ public class MarkupPastePreprocessor implements PastePreprocessor {
 					defaultLabelFromTextText != null ? defaultLabelFromTextText : code.toString());
 
 			if (newImageFile == null) {
-				//If canceled prevent past
+				/*
+				 * user pressed "cancel" hence no target file
+				 */
 				clipboard.clearContents();
-				return;
+				return resetClipboardState;
 			}
 			File imageFile = new File(newImageFile.getLocation().toOSString());
 			//Save previous choice from next time
@@ -104,13 +126,12 @@ public class MarkupPastePreprocessor implements PastePreprocessor {
 					out.append(createRelativePath(newImageFile));
 				}
 
-				TextTransfer textTransfer = TextTransfer.getInstance();
 				String toPaste = out.toString();
 				if (toPaste.length() == 0) {
 					toPaste = createRelativePath(newImageFile);
 				}
 				clipboard.setContents(new Object[] { imageData, toPaste },
-						new Transfer[] { ImageTransfer.getInstance(), textTransfer });
+						new Transfer[] { ImageTransfer.getInstance(), TextTransfer.getInstance() });
 			} catch (IOException e) {
 				WikiTextUiPlugin.getDefault().log(e);
 			}
@@ -144,6 +165,7 @@ public class MarkupPastePreprocessor implements PastePreprocessor {
 				 */
 			}
 		}
+		return resetClipboardState;
 	}
 
 	private void storeSettings(IFile newImageFile) {

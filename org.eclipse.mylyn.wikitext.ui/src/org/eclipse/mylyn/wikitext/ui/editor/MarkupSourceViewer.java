@@ -117,25 +117,25 @@ public class MarkupSourceViewer extends SourceViewer {
 			outlinePresenter.showInformation();
 			return;
 		}
+		Runnable toRevert = null;
 		switch (operation) {
 		case PASTE:
 			if (preprocessor != null) {
 				Clipboard clipboard = new Clipboard(getDisplay());
-				try {
-					preprocessor.prepareClipboard(clipboard);
-				} finally {
-					clipboard.dispose();
-				}
+				toRevert = preprocessor.prepareClipboard(clipboard);
 			}
 
 			break;
 		}
 		super.doOperation(operation);
+		if (toRevert != null) {
+			toRevert.run();
+		}
 	}
 
 	/**
 	 * Get the text widget's display.
-	 * 
+	 *
 	 * @return the display or <code>null</code> if the display cannot be retrieved or if the display is disposed
 	 * @since 3.0
 	 */

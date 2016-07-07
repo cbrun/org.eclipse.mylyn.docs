@@ -51,25 +51,28 @@ public class MarkupProjectionViewer extends ProjectionViewer {
 			outlinePresenter.showInformation();
 			return;
 		}
-		switch (operation) {
-		case PASTE:
-			if (preprocessor != null) {
-				Clipboard clipboard = new Clipboard(getDisplay());
-				try {
-					preprocessor.prepareClipboard(clipboard);
-				} finally {
-					clipboard.dispose();
+		Runnable toRevert = null;
+		try {
+			switch (operation) {
+			case PASTE:
+				if (preprocessor != null) {
+					Clipboard clipboard = new Clipboard(getDisplay());
+					toRevert = preprocessor.prepareClipboard(clipboard);
 				}
-			}
 
-			break;
+				break;
+			}
+			super.doOperation(operation);
+		} finally {
+			if (toRevert != null) {
+				toRevert.run();
+			}
 		}
-		super.doOperation(operation);
 	}
 
 	/**
 	 * Get the text widget's display.
-	 * 
+	 *
 	 * @return the display or <code>null</code> if the display cannot be retrieved or if the display is disposed
 	 * @since 3.0
 	 */
