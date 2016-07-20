@@ -223,6 +223,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 		sourceViewerConfiguration = new MarkupSourceViewerConfiguration(getPreferenceStore());
 		sourceViewerConfiguration.setOutline(outlineModel);
 		sourceViewerConfiguration.setShowInTarget(this);
+		sourceViewerConfiguration.setPastePreprocessor(new MarkupPastePreprocessor(getSelectionProvider()));
 		setSourceViewerConfiguration(sourceViewerConfiguration);
 	}
 
@@ -340,7 +341,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 			}
 		});
 
-		IFocusService focusService = (IFocusService) PlatformUI.getWorkbench().getService(IFocusService.class);
+		IFocusService focusService = PlatformUI.getWorkbench().getService(IFocusService.class);
 		if (focusService != null) {
 			focusService.addFocusTracker(viewer.getTextWidget(), MarkupEditor.EDITOR_SOURCE_VIEWER);
 		}
@@ -912,8 +913,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 			Map<String, HeadingProjectionAnnotation> newProjectionAnnotationById = new HashMap<>();
 
 			if (projectionAnnotationById != null) {
-				Set<HeadingProjectionAnnotation> toDelete = new HashSet<>(
-						projectionAnnotationById.size());
+				Set<HeadingProjectionAnnotation> toDelete = new HashSet<>(projectionAnnotationById.size());
 				Iterator<Entry<HeadingProjectionAnnotation, Position>> newPositionIt = annotationToPosition.entrySet()
 						.iterator();
 				while (newPositionIt.hasNext()) {
@@ -1037,7 +1037,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
 		super.init(site, input);
 
-		IContextService contextService = (IContextService) site.getService(IContextService.class);
+		IContextService contextService = site.getService(IContextService.class);
 		contextService.activateContext(CONTEXT);
 
 	}
@@ -1212,7 +1212,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 		if (action != null && action.getActionDefinitionId() != null && !isCommandAction(action)) {
 			// bug 336679: don't activate handlers for CommandAction.
 			// We do this by class name so that we don't rely on internals
-			IHandlerService handlerService = (IHandlerService) getSite().getService(IHandlerService.class);
+			IHandlerService handlerService = getSite().getService(IHandlerService.class);
 			handlerService.activateHandler(action.getActionDefinitionId(), new ActionHandler(action));
 		}
 		super.setAction(actionID, action);
@@ -1317,6 +1317,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 		return previewTab != null && tabFolder.getSelection() == previewTab;
 	}
 
+	@Override
 	protected boolean getInitialWordWrapStatus() {
 		return true;
 	}
