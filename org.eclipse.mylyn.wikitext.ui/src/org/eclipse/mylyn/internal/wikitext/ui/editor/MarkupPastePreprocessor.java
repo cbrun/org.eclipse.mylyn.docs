@@ -30,7 +30,9 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.mylyn.internal.wikitext.ui.WikiTextUiPlugin;
 import org.eclipse.mylyn.wikitext.core.parser.DocumentBuilder;
 import org.eclipse.mylyn.wikitext.core.parser.ImageAttributes;
+import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.core.parser.markup.MarkupLanguage;
+import org.eclipse.mylyn.wikitext.html.core.HtmlLanguage;
 import org.eclipse.mylyn.wikitext.ui.editor.PastePreprocessor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -166,6 +168,29 @@ public class MarkupPastePreprocessor implements PastePreprocessor {
 				 * Auto-adapting copy-paste is really some kind of extra assist. Anything goes wrong, then we won't do a thing and don't want to bother the end user.
 				 */
 				WikiTextUiPlugin.getDefault().log(core);
+			}
+		}
+		/*
+		 * Transform HTML by parsing it using the HtmlLanguage markup and then building the corresponding markup document using the markup langage currently used.
+		 */
+		String htmlText = (String) clipboard.getContents(HTMLTransfer.getInstance());
+		if (htmlText != null) {
+			StringWriter out = new StringWriter();
+			try {
+				HtmlLanguage language = new HtmlLanguage();
+				language.setParseCleansHtml(true);
+				MarkupParser markupParser = new MarkupParser(language,
+						new NoStyleDocumentBuilder(markup.createDocumentBuilder(out)));
+				markupParser.parse(htmlText, false);
+				String markupFromHtml = out.toString();
+				if (markupFromHtml.length() > 0) {
+					clipboard.setContents(new Object[] { htmlText, markupFromHtml },
+							new Transfer[] { HTMLTransfer.getInstance(), TextTransfer.getInstance() });
+				}
+			} catch (UnsupportedOperationException e) {
+				/**
+				 * The current markup does not support serializing from the model, let's paste the uri anyway.
+				 */
 			}
 		}
 
