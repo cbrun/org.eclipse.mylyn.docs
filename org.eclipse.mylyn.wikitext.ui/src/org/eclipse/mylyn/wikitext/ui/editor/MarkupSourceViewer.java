@@ -22,7 +22,9 @@ import org.eclipse.mylyn.internal.wikitext.ui.editor.FindAndReplaceTarget;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.commands.ShowQuickOutlineCommand;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.syntax.FastMarkupPartitioner;
 import org.eclipse.mylyn.wikitext.core.parser.markup.MarkupLanguage;
+import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * A source viewer for editors using lightweight markup. Typically configured as follows:
@@ -55,6 +57,8 @@ public class MarkupSourceViewer extends SourceViewer {
 
 	private IFindReplaceTarget findReplaceTarget;
 
+	private PastePreprocessor preprocessor;
+
 	public MarkupSourceViewer(Composite parent, IVerticalRuler ruler, int styles, MarkupLanguage markupLanguage) {
 		super(parent, ruler, styles);
 		this.markupLanguage = markupLanguage;
@@ -82,7 +86,41 @@ public class MarkupSourceViewer extends SourceViewer {
 			outlinePresenter.showInformation();
 			return;
 		}
-		super.doOperation(operation);
+		Runnable toRevert = null;
+		try {
+			switch (operation) {
+			case PASTE:
+				if (preprocessor != null) {
+					Clipboard clipboard = new Clipboard(getDisplay());
+					toRevert = preprocessor.prepareClipboard(clipboard);
+				}
+
+				break;
+			}
+			super.doOperation(operation);
+		} finally {
+			if (toRevert != null) {
+				toRevert.run();
+			}
+		}
+	}
+
+	/**
+	 * Get the text widget's display.
+	 *
+	 * @return the display or <code>null</code> if the display cannot be retrieved or if the display is disposed
+	 */
+	private Display getDisplay() {
+		if (getControl() == null || getControl().isDisposed()) {
+			return null;
+		}
+
+		Display display = getControl().getDisplay();
+		if (display != null && display.isDisposed()) {
+			return null;
+		}
+
+		return display;
 	}
 
 	@Override
@@ -108,7 +146,8 @@ public class MarkupSourceViewer extends SourceViewer {
 			MarkupSourceViewerConfiguration markupConfiguration = (MarkupSourceViewerConfiguration) configuration;
 			outlinePresenter = markupConfiguration.getOutlineInformationPresenter(this);
 			outlinePresenter.install(this);
-
+			this.preprocessor = ((MarkupSourceViewerConfiguration) configuration).getPastePreprocessor();
+			
 			if (markupConfiguration.isEnableSelfContainedIncrementalFind()) {
 				findReplaceTarget = new FindAndReplaceTarget(this);
 			}

@@ -70,7 +70,7 @@ import org.eclipse.ui.themes.IThemeManager;
 
 /**
  * A source viewer configuration suitable for installing on a markup editor
- * 
+ *
  * @author David Green
  * @since 1.1
  */
@@ -109,6 +109,8 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	private boolean enableHippieContentAssist = true;
 
 	private boolean enableSelfContainedIncrementalFind = false;
+
+	private PastePreprocessor pastePreprocessor = PastePreprocessor.NOOP;
 
 	/**
 	 * @since 1.3
@@ -150,7 +152,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	/**
 	 * Initialize default fonts. Causes this to re-read font preferences from the preference store. Calling this method
 	 * should only be necessary if font preferences have changed, or if the font preference keys have changed.
-	 * 
+	 *
 	 * @since 1.3
 	 * @see #getFontPreference()
 	 * @see #getMonospaceFontPreference()
@@ -179,7 +181,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * the font preference key for the text font
-	 * 
+	 *
 	 * @see #initializeDefaultFonts()
 	 * @since 1.3
 	 */
@@ -189,7 +191,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * the font preference key for the text font
-	 * 
+	 *
 	 * @see #initializeDefaultFonts()
 	 * @since 1.3
 	 */
@@ -199,7 +201,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * the monospace font preference key for the text font
-	 * 
+	 *
 	 * @see #initializeDefaultFonts()
 	 * @since 1.3
 	 */
@@ -209,7 +211,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * the monospace font preference key for the text font
-	 * 
+	 *
 	 * @see #initializeDefaultFonts()
 	 * @since 1.3
 	 */
@@ -285,7 +287,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * subclasses may override this method to create additional content assist processors.
-	 * 
+	 *
 	 * @return processors, or null if there are none.
 	 */
 	protected IContentAssistProcessor[] createContentAssistProcessors() {
@@ -296,7 +298,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	 * Set the markup language of the configuration. Causes the completion processor, validating reconciling strategy
 	 * and other configuration elements to be aware of the markup language in use. This may be called more than once
 	 * during the lifecycle of the editor.
-	 * 
+	 *
 	 * @param markupLanguage
 	 *            the markup language
 	 */
@@ -310,6 +312,9 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 		}
 		if (markupHyperlinkDetector != null) {
 			markupHyperlinkDetector.setMarkupLanguage(markupLanguage);
+		}
+		if (pastePreprocessor != null) {
+			pastePreprocessor.setMarkupLanguage(markupLanguage);
 		}
 	}
 
@@ -353,7 +358,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	/**
 	 * Set the file being edited. If a file is being edited this allows for validation to create markers on the file.
 	 * Some editors are not file-based and thus need not invoke this method.
-	 * 
+	 *
 	 * @param file
 	 *            the file, which may be null.
 	 */
@@ -364,6 +369,9 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 		}
 		if (markupHyperlinkDetector != null) {
 			markupHyperlinkDetector.setFile(file);
+		}
+		if (pastePreprocessor != null) {
+			pastePreprocessor.setFile(file);
 		}
 	}
 
@@ -378,17 +386,18 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	/**
 	 * provide access to an information presenter that can be used to pop-up a quick outline. Source viewers should
 	 * configure as follows:
-	 * 
+	 *
 	 * <pre>
 	 * public void configure(SourceViewerConfiguration configuration) {
 	 * 	super.configure(configuration);
 	 * 	if (configuration instanceof MarkupSourceViewerConfiguration) {
-	 * 		outlinePresenter = ((MarkupSourceViewerConfiguration) configuration).getOutlineInformationPresenter(this);
+	 * 		outlinePresenter = ((MarkupSourceViewerConfiguration) configuration)
+	 * 				.getOutlineInformationPresenter(this);
 	 * 		outlinePresenter.install(this);
 	 * 	}
 	 * }
 	 * </pre>
-	 * 
+	 *
 	 * @param sourceViewer
 	 *            the source viewer for which the presenter should be created
 	 * @return the presenter
@@ -433,7 +442,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	 * outline. Editors that call this method must keep the outline up to date as the source document changes. Editors
 	 * that do not maintain an outline need not call this method, since the outline will be computed as needed for the
 	 * quick outline.
-	 * 
+	 *
 	 * @param outlineModel
 	 */
 	public void setOutline(OutlineItem outlineModel) {
@@ -500,8 +509,8 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 		this.showInTarget = showInTarget;
 	}
 
-	private class InformationProvider implements IInformationProvider, IInformationProviderExtension,
-			IInformationProviderExtension2 {
+	private class InformationProvider
+			implements IInformationProvider, IInformationProviderExtension, IInformationProviderExtension2 {
 
 		private final IInformationControlCreator controlCreator;
 
@@ -546,7 +555,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * Indicate if Hippie content assist should be enabled. The default is true.
-	 * 
+	 *
 	 * @since 1.4
 	 * @see HippieProposalProcessor
 	 */
@@ -556,7 +565,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 
 	/**
 	 * Indicate if Hippie content assist should be enabled.
-	 * 
+	 *
 	 * @since 1.4
 	 */
 	public void setEnableHippieContentAssist(boolean enableHippieContentAssist) {
@@ -566,7 +575,7 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	/**
 	 * Indicate if incremental find should be supported in a self-contained manner. For use when SourceViewer is not
 	 * used in a {@link TextEditor}. Defaults to false.
-	 * 
+	 *
 	 * @since 1.6
 	 */
 	public boolean isEnableSelfContainedIncrementalFind() {
@@ -576,11 +585,30 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	/**
 	 * Indicate if incremental find should be supported in a self-contained manner. For use when SourceViewer is not
 	 * used in a {@link TextEditor}.
-	 * 
+	 *
 	 * @since 1.6
 	 */
 	public void setEnableSelfContainedIncrementalFind(boolean enableSelfContainedIncrementalFind) {
 		this.enableSelfContainedIncrementalFind = enableSelfContainedIncrementalFind;
+	}
+
+	/**
+	 * @return the paste preprocessor currently configured.
+	 * @since 2.11
+	 */
+	public PastePreprocessor getPastePreprocessor() {
+		return pastePreprocessor;
+	}
+
+	/**
+	 * Set a new paste preprocessor.
+	 *
+	 * @param pastePreprocess
+	 *            the paste preprocessor to set.
+	 * @since 2.11
+	 */
+	public void setPastePreprocessor(PastePreprocessor pastePreprocess) {
+		this.pastePreprocessor = pastePreprocess;
 	}
 
 }
