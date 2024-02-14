@@ -46,6 +46,8 @@ import org.eclipse.jface.text.reconciler.MonoReconciler;
 import org.eclipse.jface.text.rules.ITokenScanner;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.mylyn.internal.wikitext.ui.WikiTextUiPlugin;
+import org.eclipse.mylyn.internal.wikitext.ui.editor.ImagePastePreprocessor;
+import org.eclipse.mylyn.internal.wikitext.ui.editor.PastePreprocessor;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.assist.AnchorCompletionProcessor;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.assist.MarkupTemplateCompletionProcessor;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.assist.MultiplexingContentAssistProcessor;
@@ -113,6 +115,8 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	private boolean enableHippieContentAssist = true;
 
 	private boolean enableSelfContainedIncrementalFind = false;
+
+	private PastePreprocessor pastePreprocessor = PastePreprocessor.NOOP;
 
 	/**
 	 * @since 1.3
@@ -325,6 +329,9 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 		if (markupHyperlinkDetector != null) {
 			markupHyperlinkDetector.setMarkupLanguage(markupLanguage);
 		}
+		if (pastePreprocessor != null) {
+			pastePreprocessor.setMarkupLanguage(markupLanguage);
+		}
 	}
 
 	@Override
@@ -378,6 +385,9 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 		}
 		if (markupHyperlinkDetector != null) {
 			markupHyperlinkDetector.setFile(file);
+		}
+		if (pastePreprocessor != null) {
+			pastePreprocessor.setFile(file);
 		}
 	}
 
@@ -598,6 +608,14 @@ public class MarkupSourceViewerConfiguration extends AbstractTextSourceViewerCon
 	 */
 	public void setEnableSelfContainedIncrementalFind(boolean enableSelfContainedIncrementalFind) {
 		this.enableSelfContainedIncrementalFind = enableSelfContainedIncrementalFind;
+	}
+
+	public PastePreprocessor getPastePreprocessor() {
+		return pastePreprocessor;
+	}
+
+	public void setPastePreprocessor(ImagePastePreprocessor imagePastePreprocessor) {
+		this.pastePreprocessor = imagePastePreprocessor;
 	}
 
 }

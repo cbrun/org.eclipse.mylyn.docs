@@ -229,6 +229,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 		sourceViewerConfiguration = new MarkupSourceViewerConfiguration(getPreferenceStore());
 		sourceViewerConfiguration.setOutline(outlineModel);
 		sourceViewerConfiguration.setShowInTarget(this);
+		sourceViewerConfiguration.setPastePreprocessor(new ImagePastePreprocessor(getSelectionProvider()));
 		setSourceViewerConfiguration(sourceViewerConfiguration);
 	}
 
@@ -642,7 +643,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 	 * updates the preview and optionally reveal the section that corresponds to the given outline item.
 	 *
 	 * @param outlineItem
-	 *                        the outline item, or null
+	 *            the outline item, or null
 	 */
 	private void updatePreview(final OutlineItem outlineItem) {
 		if (previewDirty && browser != null) {
@@ -1195,7 +1196,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 	 * lookup the markup language preference of a file based on the persisted preference.
 	 *
 	 * @param file
-	 *                 the file for which the preference should be looked up
+	 *            the file for which the preference should be looked up
 	 * @return the markup language preference, or null if it was not set or could not be loaded.
 	 */
 	public static MarkupLanguage loadMarkupLanguagePreference(IFile file) {
@@ -1210,7 +1211,7 @@ public class MarkupEditor extends TextEditor implements IShowInTarget, IShowInSo
 	 * lookup the markup language preference of a file based on the persisted preference.
 	 *
 	 * @param file
-	 *                 the file for which the preference should be looked up
+	 *            the file for which the preference should be looked up
 	 * @return the markup language name, or null if no preference exists
 	 */
 	public static String getMarkupLanguagePreference(IFile file) {

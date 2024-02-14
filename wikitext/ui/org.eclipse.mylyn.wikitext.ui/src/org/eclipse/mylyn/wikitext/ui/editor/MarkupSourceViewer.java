@@ -21,10 +21,13 @@ import org.eclipse.jface.text.source.IVerticalRuler;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.FindAndReplaceTarget;
+import org.eclipse.mylyn.internal.wikitext.ui.editor.PastePreprocessor;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.commands.ShowQuickOutlineCommand;
 import org.eclipse.mylyn.internal.wikitext.ui.editor.syntax.FastMarkupPartitioner;
 import org.eclipse.mylyn.wikitext.parser.markup.MarkupLanguage;
+import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * A source viewer for editors using lightweight markup. Typically configured as follows:
@@ -47,6 +50,8 @@ import org.eclipse.swt.widgets.Composite;
  */
 public class MarkupSourceViewer extends SourceViewer {
 	private final MarkupLanguage markupLanguage;
+
+	private PastePreprocessor preprocessor;
 
 	/**
 	 * Operation code for quick outline
@@ -83,11 +88,48 @@ public class MarkupSourceViewer extends SourceViewer {
 
 	@Override
 	public void doOperation(int operation) {
+		Runnable toReset = null;
 		if (operation == QUICK_OUTLINE && outlinePresenter != null) {
 			outlinePresenter.showInformation();
 			return;
 		}
+		switch (operation) {
+		case PASTE:
+			if (preprocessor != null) {
+				Clipboard clipboard = new Clipboard(getDisplay());
+				try {
+					toReset = preprocessor.prepareClipboard(clipboard);
+				} finally {
+					clipboard.dispose();
+				}
+			}
+
+			break;
+		}
 		super.doOperation(operation);
+		if (toReset != null) {
+			toReset.run();
+			toReset = null;
+		}
+	}
+
+	/**
+	 * Get the text widget's display.
+	 *
+	 * @return the display or <code>null</code> if the display cannot be retrieved or if the display is disposed
+	 * @since 3.0
+	 */
+	private Display getDisplay() {
+		if (getControl() == null || getControl().isDisposed()) {
+			return null;
+		}
+
+		Display display = getControl().getDisplay();
+		if (display != null && display.isDisposed()) {
+			return null;
+		}
+
+		return display;
 	}
 
 	@Override
@@ -112,7 +154,7 @@ public class MarkupSourceViewer extends SourceViewer {
 		if (configuration instanceof MarkupSourceViewerConfiguration markupConfiguration) {
 			outlinePresenter = markupConfiguration.getOutlineInformationPresenter(this);
 			outlinePresenter.install(this);
-
+			this.preprocessor = ((MarkupSourceViewerConfiguration) configuration).getPastePreprocessor();
 			if (markupConfiguration.isEnableSelfContainedIncrementalFind()) {
 				findReplaceTarget = new FindAndReplaceTarget(this);
 			}
